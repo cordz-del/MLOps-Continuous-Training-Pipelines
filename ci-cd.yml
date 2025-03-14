@@ -1,0 +1,31 @@
+# .github/workflows/ci-cd.yml
+name: Model Retraining & Deployment
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: "0 * * * *"  # Runs every hour
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Run Tests
+        run: pytest
+      - name: Retrain Model
+        run: python src/train.py
+      - name: Build Docker Image
+        run: docker build -t your-dockerhub-username/ai-model:latest .
+      - name: Push Docker Image
+        run: |
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push your-dockerhub-username/ai-model:latest
